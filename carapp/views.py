@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from rest_framework import permissions
-from carapp.serializers import UserSerializer, GroupSerializer, CarSerializer
+from carapp.serializers import UserSerializer, GroupSerializer, CarSerializer, RateSerializer
 from carapp.models import Car, Rate
 
 from rest_framework import status
@@ -35,7 +35,7 @@ def car_list(request, format=None):
 @api_view(['GET','POST','DELETE'])
 def car_detail(request, pk,format=None):
     """
-    GET, or DELETE a car.
+    GET, POST or DELETE a car.
     """
     try:
         car = Car.objects.get(pk=pk)
@@ -58,7 +58,26 @@ def car_detail(request, pk,format=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['POST'])
+def post_review(request, pk,format=None):
+    """
+    POST  Review
+    """
+    try:
+        car = Car.objects.get(pk=pk)
+    except Car.DoesNotExist:
+        return Response(status=404)
 
+    serializer = RateSerializer(car, data=request.data)
+
+    if request.method == 'POST':
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    else:
+        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
 
 
 """

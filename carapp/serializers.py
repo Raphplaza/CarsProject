@@ -26,9 +26,17 @@ class CarSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     make = serializers.CharField(required=True, allow_blank=False, max_length=50)
     model = serializers.CharField(required=True, allow_blank=False, max_length=50)
+    avg_rating = serializers.FloatField(required=True, min_value = 0.0, max_value=5.0)
 
     def create(self, validated_data):
-        
         #Create and return a new `Car` instance, given the validated data.
-       
         return Car.objects.create(**validated_data)
+
+
+class RateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    rating = serializers.FloatField(min_value = 1, max_value=5)
+
+    def create(self, validated_data):
+        #Create and return a new `Rate` instance, given the validated data.
+        return Rate.objects.create(**validated_data)
