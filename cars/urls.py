@@ -18,6 +18,7 @@ from django.urls import path, include
 from django.contrib.auth.models import User
 from rest_framework import routers, serializers, viewsets
 import rest_framework
+from carapp import views
 
 from carapp.models import Car
 
@@ -44,10 +45,11 @@ class CarViewSet(viewsets.ModelViewSet):
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet)
-router.register(r'cars',CarViewSet)
+#router.register(r'cars',CarViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
     path('api-auth/',include('rest_framework.urls',namespace = 'rest_framework')),
     path('admin/', admin.site.urls),
+    path('', include('carapp.urls')),
 ]

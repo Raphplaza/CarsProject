@@ -15,11 +15,11 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['url', 'name']
 
 
-
+"""
 class CarSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Car
-        fields = ['make', 'car_model']
+        fields = ['make', 'model']
 """
 
 class CarSerializer(serializers.Serializer):
@@ -32,5 +32,3 @@ class CarSerializer(serializers.Serializer):
         #Create and return a new `Car` instance, given the validated data.
        
         return Car.objects.create(**validated_data)
-
-"""
