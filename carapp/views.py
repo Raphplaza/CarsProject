@@ -58,26 +58,62 @@ def car_detail(request, pk,format=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
-def post_review(request, pk,format=None):
+@api_view(['GET','POST'])
+def rate_list(request, pk,format=None):
     """
-    POST  Review
+    View all reviews of single car
     """
     try:
         car = Car.objects.get(pk=pk)
     except Car.DoesNotExist:
         return Response(status=404)
 
-    serializer = RateSerializer(car, data=request.data)
+    if request.method == 'GET':
+        rate = car.rate_set.all()
+        serializer = RateSerializer(rate, many=True)
+        return Response(serializer.data)
+
+@api_view(['POST'])
+def rate(request, format=None):
 
     if request.method == 'POST':
+        serializer = RateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    else:
-        return Response(serializer.errors, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['GET','POST'])
+def car_list_popular(request, format=None):
+    """
+    List all code cars, or create a new car.
+    """
+    if request.method == 'GET':
+        cars = Car.objects.all()
+        serializer = CarSerializer(cars, many=True)
+        return Response(serializer.data)
+
+    
+
+    """
+    Leave rating
+      
+    try:
+        car = Car.objects.get(pk=request.datacar_id)
+    except Car.DoesNotExist:
+        return Response(status=404)
+
+
+    if request.method == 'POST':
+        serializer = RateSerializer(Rate, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+"""
+
 
 
 """
