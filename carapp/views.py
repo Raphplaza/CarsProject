@@ -1,9 +1,8 @@
 from django.shortcuts import render
 
-from django.contrib.auth.models import User, Group
 from rest_framework import viewsets
 from rest_framework import permissions
-from carapp.serializers import UserSerializer, GroupSerializer, CarSerializer, RateSerializer
+from carapp.serializers import CarSerializer, RateSerializer, PopularCarSerializer
 from carapp.models import Car, Rate
 
 from rest_framework import status
@@ -84,14 +83,22 @@ def rate(request, format=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET','POST'])
+@api_view(['GET'])
 def car_list_popular(request, format=None):
     """
-    List all code cars, or create a new car.
+    List of top cars, based on number of ratings (not average!)
     """
     if request.method == 'GET':
+
         cars = Car.objects.all()
-        serializer = CarSerializer(cars, many=True)
+
+        #sort by func 'rates_number' 
+        sorted_cars = sorted(cars, key= lambda car: -(car.rates_number()))
+
+        #top 5 of sorted
+        sorted_cars = sorted_cars[:5]
+
+        serializer = PopularCarSerializer(sorted_cars, many=True)
         return Response(serializer.data)
 
     
