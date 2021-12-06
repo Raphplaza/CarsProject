@@ -1,208 +1,147 @@
 # Create your tests here.
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 from carapp.models import Car, Rate
+import random
+import statistics
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import CarSerializer, RateSerializer
+
+from rest_framework.test import APIRequestFactory
+
+# initialize the APIClient app
+client = Client()
+
+#Endpoints Test
+
+class GetEndpointsTests(TestCase):
+
+    def setUp(self):
+        Car.objects.create(
+            make='audi', model="a4")
+        Car.objects.create(
+            make='audi', model="a6")
+        Car.objects.create(
+            make='audi', model="a8")
+
+        rating1=random.randint(1,5)
+        rating2=random.randint(1,5)
+        rating3=random.randint(1,5)
+
+        Rate.objects.create(
+            car_id=1, rating = rating1)
+        Rate.objects.create(
+            car_id=1, rating = rating2)
+        Rate.objects.create(
+            car_id=1, rating = rating3)        
+
+    def test_get_all_cars(self):
+        # get API response
+        response = client.get('/cars/')
+        # get data from db
+        cars = Car.objects.all()
+        serializer = CarSerializer(cars, many=True)
+        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
-def createCarModel(make, model):
+    def test_get_all_rates(self):
+        # get API response
+        response = client.get('/rates/1/')
+        # get data from db
+        rates = Rate.objects.filter(car_id=1)
+        serializer = RateSerializer(rates, many=True)
+        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    #Create a Car object with the given `make` and 'model' 
+
+    def test_avg_rating(self):
+        # get API response
+        response = client.get('/cars/1/')
+        # get data from db
+        rates = Rate.objects.all()
+        ratings = []
+        for rate in rates:
+            ratings.append(rate.rating)
+        average_rating = statistics.mean(ratings)
+        self.assertEqual(response.data["avg_rating"], average_rating)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_num_of_rating(self):
+        # get API response
+        response = client.get('/rates/1/')
+        # get data from db
+        rates = Rate.objects.filter(car_id=1)
+        serializer = RateSerializer(rates, many=True)
+        self.assertEqual(response.data, serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+class PopularViewTests(TestCase):
+
+    def setUp(self):
+        Car.objects.create(
+            make='audi', model="a4")
+        Car.objects.create(
+            make='audi', model="a6")
+        Car.objects.create(
+            make='audi', model="a8")
+
+        rating1=random.randint(1,5)
+        rating2=random.randint(1,5)
+        rating3=random.randint(1,5)
+
+        for i in range(1,80):
+            Rate.objects.create(
+                car_id=1, rating = rating1)
+
+        #most ratings for the car with id=2 (audi a6)
+        for i in range(1,100): 
+            Rate.objects.create(
+                car_id=2, rating = rating2)
+
+        for i in range(1,60): 
+            Rate.objects.create(
+                car_id=3, rating = rating3)   
+
+    def test_popular_cars(self):
+        # get API response
+        response = client.get('/popular')
+
+        self.assertEqual(response.data[0]['model'], "a6")
+        self.assertEqual(response.data[1]['model'], "a4")
+        self.assertEqual(response.data[2]['model'], "a8")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class PostEndpointsTests(TestCase):
+    def test_post_car(self):
+        request = client.post('/cars/', {"make": "audi","model":"A6"}, format='json')
+        request = client.post('/cars/', {"make": "audi","model":"A4"}, format='json')
+        request = client.post('/cars/', {"make": "audi","model":"A8"}, format='json')
+
+        #creating a non-existing car
+        request = client.post('/cars/', {"make": "auuuudi","model":"A8"}, format='json')
+
+        # get data from db
+        cars = Car.objects.all()
+        serializer = CarSerializer(cars, many=True)
+        self.assertEqual(serializer.data[0]["make"],"audi")
+        self.assertEqual(serializer.data[1]["model"],"A4")
+        self.assertEqual(len(serializer.data),3)
+
+
     
-    return Car.objects.create(make=make, model=model)
-
-def createRateModel(car_id, rating):
-
-    #Create a given Rating of a given car (car_id parameter)
-
-    return Rate.objects.create(car_id=car_id, rating=rating)
-
-#Backend tests
+#Basic Backend test
 
 class RateModelTests(TestCase):
     def test_number_of_rates(self):
         
-        car1 = createCarModel('volkswagen','polo')
-        for i in range(1,20):
-            createRateModel(1,4)
+        Car.objects.create(make='volkswagen',model='polo')
+        for i in range(1,21):
+            Rate.objects.create(car_id=1,rating=4)
 
-        self.assertEqual(car1.rates_number(),20)
+        self.assertEqual(len(Car.objects.get(id=1).rate_set.all()),20)
 
-    def test_average_rating(self):
-        
-        car1 = createCarModel('volkswagen','polo')
-        for i in range(1,20):
-            createRateModel(1,4)
-
-        self.assertEqual(car1.rates_number(),4)
-
-
-"""
-    
-    def test_was_published_recently_with_old_question(self):
-
-    #was_published_recently() returns False for questions whose pub_date
-    #is older than 1 day.
-
-        time = timezone.now() - datetime.timedelta(days=1, seconds=1)
-        old_question = Question(pub_date=time)
-        self.assertIs(old_question.was_published_recently(), False)
-
-    
-    def test_was_published_recently_with_recent_question(self):
-    
-    #was_published_recently() returns True for questions whose pub_date
-    #is within the last day.
-    
-        time = timezone.now() - datetime.timedelta(hours=23, minutes=59, seconds=59)
-        recent_question = Question(pub_date=time)
-        self.assertIs(recent_question.was_published_recently(), True)
-
-
-
-
-def create_question(question_text, days):
-
-    #Create a question with the given `question_text` and published the
-    #given number of `days` offset to now (negative for questions published
-    #in the past, positive for questions that have yet to be published).
-    
-    time = timezone.now() + datetime.timedelta(days=days)
-    return Question.objects.create(question_text=question_text, pub_date=time)
-
-
-class QuestionIndexViewTests(TestCase):
-    def test_no_questions(self):
-    
-        #If no questions exist, an appropriate message is displayed.
-    
-        response = self.client.get(reverse('polls:index'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No polls are available.")
-        self.assertQuerysetEqual(response.context['latest_question_list'], [])
-
-    def test_past_question(self):
-      
-        #Questions with a pub_date in the past are displayed on the
-        #index page.
-       
-        question = create_question(question_text="Past question.", days=-30)
-        response = self.client.get(reverse('polls:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            [question],
-        )
-
-    def test_future_question(self):
-        
-        #Questions with a pub_date in the future aren't displayed on
-        #the index page.
-        
-        create_question(question_text="Future question.", days=30)
-        response = self.client.get(reverse('polls:index'))
-        self.assertContains(response, "No polls are available.")
-        self.assertQuerysetEqual(response.context['latest_question_list'], [])
-
-    def test_future_question_and_past_question(self):
-        
-        #Even if both past and future questions exist, only past questions
-        #are displayed.
-        
-        question = create_question(question_text="Past question.", days=-30)
-        create_question(question_text="Future question.", days=30)
-        response = self.client.get(reverse('polls:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            [question],
-        )
-
-    def create_question(question_text, days):
-    
-    #Create a question with the given `question_text` and published the
-    #given number of `days` offset to now (negative for questions published
-    #in the past, positive for questions that have yet to be published).
-    
-        time = timezone.now() + datetime.timedelta(days=days)
-        return Question.objects.create(question_text=question_text, pub_date=time)
-
-
-class QuestionIndexViewTests(TestCase):
-    def test_no_questions(self):
-       
-        #If no questions exist, an appropriate message is displayed.
-       
-        response = self.client.get(reverse('polls:index'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No polls are available.")
-        self.assertQuerysetEqual(response.context['latest_question_list'], [])
-
-    def test_past_question(self):
-        
-        #Questions with a pub_date in the past are displayed on the
-        #index page.
-
-        question = create_question(question_text="Past question.", days=-30)
-        response = self.client.get(reverse('polls:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            [question],
-        )
-
-    def test_future_question(self):
-        
-        #Questions with a pub_date in the future aren't displayed on
-        #the index page.
-
-        create_question(question_text="Future question.", days=30)
-        response = self.client.get(reverse('polls:index'))
-        self.assertContains(response, "No polls are available.")
-        self.assertQuerysetEqual(response.context['latest_question_list'], [])
-
-    def test_future_question_and_past_question(self):
-     
-        #Even if both past and future questions exist, only past questions
-        #are displayed.
-      
-        question = create_question(question_text="Past question.", days=-30)
-        create_question(question_text="Future question.", days=30)
-        response = self.client.get(reverse('polls:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            [question],
-        )
-
-    def test_two_past_questions(self):
-       
-        #The questions index page may display multiple questions.
-        
-        question1 = create_question(question_text="Past question 1.", days=-30)
-        question2 = create_question(question_text="Past question 2.", days=-5)
-        response = self.client.get(reverse('polls:index'))
-        self.assertQuerysetEqual(
-            response.context['latest_question_list'],
-            [question2, question1],
-        )
-
-
-class QuestionDetailViewTests(TestCase):
-    def test_future_question(self):
-       
-   #     The detail view of a question with a pub_date in the future
-   #     returns a 404 not found.
-
-        future_question = create_question(question_text='Future question.', days=5)
-        url = reverse('polls:detail', args=(future_question.id,))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-
-    def test_past_question(self):
-        
-   #     The detail view of a question with a pub_date in the past
-    #    displays the question's text.
-
-        past_question = create_question(question_text='Past Question.', days=-5)
-        url = reverse('polls:detail', args=(past_question.id,))
-        response = self.client.get(url)
-        self.assertContains(response, past_question.question_text)
-
-
-"""
