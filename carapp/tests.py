@@ -4,13 +4,13 @@ from django.urls import reverse
 from carapp.models import Car, Rate
 
 
-def create_car_model(make, model):
+def createCarModel(make, model):
 
     #Create a Car object with the given `make` and 'model' 
     
     return Car.objects.create(make=make, model=model)
 
-def create_rate_model(car_id, rating):
+def createRateModel(car_id, rating):
 
     #Create a given Rating of a given car (car_id parameter)
 
@@ -19,19 +19,19 @@ def create_rate_model(car_id, rating):
 #Backend tests
 
 class RateModelTests(TestCase):
-    def number_of_rates(self):
+    def test_number_of_rates(self):
         
-        car1 = create_car_model('volkswagen','polo')
+        car1 = createCarModel('volkswagen','polo')
         for i in range(1,20):
-            create_rate_model(1,4)
+            createRateModel(1,4)
 
         self.assertEqual(car1.rates_number(),20)
 
-    def average_rating(self):
+    def test_average_rating(self):
         
-        car1 = create_car_model('volkswagen','polo')
+        car1 = createCarModel('volkswagen','polo')
         for i in range(1,20):
-            create_rate_model(1,4)
+            createRateModel(1,4)
 
         self.assertEqual(car1.rates_number(),4)
 
