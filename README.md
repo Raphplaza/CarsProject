@@ -7,9 +7,12 @@ in order to run, test and edit:
 
 $pipenv install django 
 $pipenv install djangorestframework
+$pipenv install bs4
+
+3. activate venv:
 $pipenv shell
 
-3. in VSCode:
+4. in VSCode:
     1. open comand palette cmd + shift + P
     2. set up interpreter   
     3. enter interpreter path 
